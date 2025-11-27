@@ -131,3 +131,76 @@ endif
 
 
 
+
+# ===========================================
+# API Make Commands
+# ===========================================
+
+.PHONY: api-run api-test api-coverage
+
+# -------------------------------------------
+# Run FastAPI backend
+# -------------------------------------------
+ifeq ($(OS),Windows_NT)
+api-run: venv-ensure
+	@echo "Launching FastAPI on http://$(API_HOST):$(API_PORT)"
+	@cmd /C "( \
+		call $(VENV_DIR)\Scripts\activate && \
+		$(PYTHON) -m uvicorn api.src.main:app --host $(API_HOST) --port $(API_PORT) --reload --reload-dir $(API_RELOAD_DIR) \
+	)"
+else
+api-run: venv-ensure
+	@echo "Launching FastAPI on http://$(API_HOST):$(API_PORT)"
+	@bash -c "source $(VENV_DIR)/bin/activate && \
+		$(PYTHON) -m uvicorn api.src.main:app --host $(API_HOST) --port $(API_PORT) --reload --reload-dir $(API_RELOAD_DIR)"
+endif
+
+# -------------------------------------------
+# Run API Tests
+# -------------------------------------------
+ifeq ($(OS),Windows_NT)
+api-test: venv-ensure
+	@echo "Running API tests..."
+	@cmd /C "( \
+		set PYTHONPATH=. && \
+		call $(VENV_DIR)\Scripts\activate && \
+		pytest tests\\API -v  \
+			--override-ini=asyncio_default_fixture_loop_scope=function \
+			--override-ini=asyncio_mode=auto \
+			--override-ini=addopts= \
+	)"
+else
+api-test: venv-ensure
+	@echo "Running API tests..."
+	@bash -c "export PYTHONPATH=. && \
+		source $(VENV_DIR)/bin/activate && \
+		pytest tests/API -v --override-ini=asyncio_default_fixture_loop_scope=function --override-ini=asyncio_mode=auto --override-ini=addopts= "
+endif
+
+# -------------------------------------------
+# Run API Tests with Coverage
+# -------------------------------------------
+ifeq ($(OS),Windows_NT)
+api-coverage: venv-ensure
+	@echo "Running API tests with coverage..."
+	@cmd /C "( \
+		set PYTHONPATH=. && \
+		call $(VENV_DIR)\Scripts\activate && \
+		pytest tests\\API -v --override-ini="addopts=" --cov=API --cov-report=term-missing --cov-report=xml --cov-report=html \
+			--override-ini=asyncio_default_fixture_loop_scope=function \
+			--override-ini=asyncio_mode=auto \
+			--override-ini=addopts= \
+	)"
+else
+api-coverage: venv-ensure
+	@echo "Running API tests with coverage..."
+	@bash -c "export PYTHONPATH=. && \
+		source $(VENV_DIR)/bin/activate && \
+		pytest tests/API -v --override-ini="addopts=" --cov=API --cov-report=term-missing --cov-report=xml --cov-report=html --override-ini=asyncio_default_fixture_loop_scope=function --override-ini=asyncio_mode=auto --override-ini=addopts= "
+endif
+
+
+
+
+
+

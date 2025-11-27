@@ -1,10 +1,13 @@
-
 import os
 import logging
 from functools import lru_cache
 
-from src.repository.sql_repository import SQLRepository
-from API.Repository.postgres_connection_manager import PostgresConnectionManager
+from dotenv import load_dotenv
+from fastapi import Depends
+
+from api.src.database.neo4j_connection_manager import Neo4jConnectionManager
+from api.src.repository.neo4j_graph_repository import Neo4jGraphRepository
+from api.src.service.soccer_service import SoccerService
 
 
 load_dotenv()
@@ -18,18 +21,15 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 
-@lru_cache()
-def get_postgres_connection_manager() -> PostgresConnectionManager:
-    """Create and return a PostgreSQL connection manager."""
-    db_host = os.environ["DB_HOST"]
-    db_port = os.environ["DB_PORT"]
-    db_name = os.environ["DB_NAME"]
-    db_user = os.environ["DB_USER"]
-    db_password = os.environ["DB_PASSWORD"]
+@lru_cache(maxsize=1)
+def get_neo4j_connection_manager() -> Neo4jConnectionManager:
+    """Create and return a Neo4j connection manager."""
+    uri = os.environ["NEO4J_URI"]
+    user = os.environ["NEO4J_USER"]
+    password = os.environ["NEO4J_PASSWORD"]
 
-    db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-
-    return PostgresConnectionManager(db_url=db_url)
+    logger.info(f"Neo4j URI: {uri}, Neo4j User: {user}")
+    return Neo4jConnectionManager(uri=uri, user=user, password=password)
 
 
 # ============================================================
@@ -37,11 +37,9 @@ def get_postgres_connection_manager() -> PostgresConnectionManager:
 # ============================================================
 
 
-def get_postgres_sql_repository(
-    pcm: PostgresConnectionManager = Depends(get_postgres_connection_manager),
-) -> PostgresSqlRepository:
-    """Provide an SQL repository using the connection manager."""
-    return PostgresSqlRepository(pcm)
+def get_neo4j_graph_repository(ncm: Neo4jConnectionManager = Depends(get_neo4j_connection_manager)) -> Neo4jGraphRepository:
+    """Provide an Graph repository using the connection manager."""
+    return Neo4jGraphRepository(ncm)
 
 
 # ============================================================
@@ -49,9 +47,6 @@ def get_postgres_sql_repository(
 # ============================================================
 
 
-def get_soccer_service(
-    psr: SQLRepository = Depends(get_postgres_sql_repository),
-) -> SoccerService:
-    """Provide an AuthService using the SQL repository."""
-    return SoccerService(psr)
-
+def get_soccer_service(ngr: Neo4jGraphRepository = Depends(get_neo4j_graph_repository)) -> SoccerService:
+    """Provide an SoccerService using the Graph Repository."""
+    return SoccerService(ngr)

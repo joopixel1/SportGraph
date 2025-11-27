@@ -28,13 +28,14 @@ class Chrome(uc.Chrome):
         except:
             pass
 
-def get_driver(headless:bool=False) -> WebDriver:
+
+def get_driver(headless: bool = False) -> WebDriver:
     """Create a Chrome driver with faster page load strategy."""
     chrome_args = [
         "--disable-blink-features=AutomationControlled",
         "--no-sandbox",
         "--disable-dev-shm-usage",
-        *(["--headless=new"] if headless else [])
+        *(["--headless=new"] if headless else []),
     ]
 
     options = uc.ChromeOptions()
@@ -44,8 +45,9 @@ def get_driver(headless:bool=False) -> WebDriver:
 
     driver = Chrome(options=options, version_main=141)
     driver.set_page_load_timeout(60)
-    
+
     return driver
+
 
 def wait_for_id(driver: WebDriver, element_id: str, timeout: int = 5) -> WebElement:
     """Wait until an element with the given ID appears in the DOM."""
@@ -55,6 +57,7 @@ def wait_for_id(driver: WebDriver, element_id: str, timeout: int = 5) -> WebElem
         return element
     except TimeoutException:
         raise
+
 
 def format_duration(seconds: float) -> str:
     seconds = int(seconds)
@@ -69,6 +72,7 @@ def format_duration(seconds: float) -> str:
         parts.append(f"{s} s")
     return ", ".join(parts)
 
+
 def load_completed_players() -> set[str]:
     """Load completed player URLs from a text file (one per line)."""
     if os.path.exists(PROGRESS_FILE):
@@ -76,11 +80,13 @@ def load_completed_players() -> set[str]:
             return set(line.strip() for line in f if line.strip())
     return set()
 
+
 def save_completed_player(link: str) -> None:
     """Append a single completed player URL to the progress file."""
     os.makedirs(os.path.dirname(PROGRESS_FILE) or ".", exist_ok=True)
     with open(PROGRESS_FILE, "a", encoding="utf-8") as f:
         f.write(link + "\n")
+
 
 def generate_big5_season_league_urls(start_year: int, end_year: int) -> list[str]:
     """Generate FBref competition URLs for multiple seasons and leagues."""
@@ -100,6 +106,7 @@ def generate_big5_season_league_urls(start_year: int, end_year: int) -> list[str
             urls.append(f"https://fbref.com/en/comps/{comp_id}/{season_str}/{season_str}-{league_name}-Stats")
     return urls
 
+
 def get_season_club_links(driver: WebDriver, url: str) -> tuple[str, list[str]]:
     """Fetch all Premier League club 'Stats' page links from the given season page using Selenium."""
     print(f"🌐 Fetching season clubs links from {url}")
@@ -109,7 +116,7 @@ def get_season_club_links(driver: WebDriver, url: str) -> tuple[str, list[str]]:
     # Example: https://fbref.com/en/comps/9/2024-2025/2024-2025-Premier-League-Stats
     url_parts = url.split("/")
     competition_id, season = url_parts[-3], url_parts[-2]
-    
+
     table_id = f"results{season}{competition_id}1_overall"
     table_el = wait_for_id(driver, table_id)
 
@@ -122,6 +129,7 @@ def get_season_club_links(driver: WebDriver, url: str) -> tuple[str, list[str]]:
         clubs.append(club_url)
 
     return competition_id, clubs
+
 
 def normalize_player_url(url: str) -> str:
     """
@@ -139,10 +147,11 @@ def normalize_player_url(url: str) -> str:
         return f"https://fbref.com/en/players/{player_id}/{clean_name}"
     return url
 
+
 def get_player_links_from_season_club_link(driver: WebDriver, season_club_url: str, competition_id: str) -> list[str]:
     """Fetch all player profile links from a given club's page."""
     print(f"⚽ Fetching players from season club page: {season_club_url}")
-    
+
     driver.get(season_club_url)
 
     table_id = f"stats_standard_{competition_id}"
@@ -158,16 +167,17 @@ def get_player_links_from_season_club_link(driver: WebDriver, season_club_url: s
 
     return players
 
+
 def store_player_club_history(driver: WebDriver, url: str, csv_writer) -> None:
     """Fetch a player's club history page HTML using the shared Selenium driver."""
     print(f"🌐 Fetching page for {url}")
 
     driver.get(url)
-    
+
     # Example: https://fbref.com/en/players/d70ce98e/Lionel-Messi -> d70ce98e
     url_parts = url.split("/")
     player_id, player_name = url_parts[-2], url_parts[-1]
-    
+
     table_id = f"stats_player_summary_{player_id}"
     table_el = wait_for_id(driver, table_id)
 
@@ -194,7 +204,7 @@ def store_player_club_history(driver: WebDriver, url: str, csv_writer) -> None:
             continue
 
         records.append((season, club, apps))
-    
+
     if not records:
         return
 
@@ -202,7 +212,6 @@ def store_player_club_history(driver: WebDriver, url: str, csv_writer) -> None:
     start_season = records[0][0]
     end_season = records[0][0]
     apps_season = records[0][2]
-
 
     for season, club, apps in records[1:]:
         if club == current_club:
@@ -219,7 +228,7 @@ def store_player_club_history(driver: WebDriver, url: str, csv_writer) -> None:
 
 if __name__ == "__main__":
     start_ts = time.time()
-    
+
     driver = get_driver()
 
     player_links = set()
@@ -259,7 +268,7 @@ if __name__ == "__main__":
     player_links = player_links - completed_players
     total = len(player_links)
     print(f"Starting processing of {total} players")
-    
+
     os.makedirs(os.path.dirname(OUTPUT_FILE) or ".", exist_ok=True)
     with open(OUTPUT_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
