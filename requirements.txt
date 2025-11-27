@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:382cd8b0983262d6a78184a59941b2e586f5afe82d186d0c957e7736351d18fa
-size 179
+# Web Framework
+fastapi
+uvicorn[standard]
+
+# DB Drivers
+neo4j
+
+# Web Scraping
+selenium
+undetected-chromedriver
+beautifulsoup4
+
+# Utilities
+setuptools
+python-dotenv
