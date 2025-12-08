@@ -2,14 +2,14 @@
 set -e
 
 APP_DIR="/opt/SportGraph/api/src"
-VENV_DIR="/opt/SportGraph/venv"
+VENV_DIR="/opt/SportGraph/.venv"
 
 echo ">>> Pulling latest code"
 cd $APP_DIR
-git pull origin main
+git pull --rebase origin main
 
 echo ">>> Installing dependencies"
-$VENV_DIR/bin/pip install -r requirements.txt
+make venv-install
 
 echo ">>> Restarting service"
 sudo systemctl restart sportgraph
